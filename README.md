@@ -1,97 +1,49 @@
 # Sales API
 
-API REST desenvolvida com Spring Boot para registrar vendas e consolidar o desempenho dos vendedores em um periodo informado.
+API REST para registro de vendas e consolidação do desempenho de vendedores em um período. O projeto foi evoluído para uma base de portfólio com Java 21, Spring Boot 3, PostgreSQL, Flyway, Docker, OpenAPI e CI.
 
-## Objetivo do desafio
+## Stack
 
-Implementar dois servicos REST:
-
-- criar uma nova venda;
-- listar vendedores com total de vendas e media diaria de vendas no intervalo informado.
-
-## Tecnologias utilizadas
-
-- Java 8
-- Spring Boot 2.7.18
-- Spring Web
-- Spring Data JPA
-- H2 Database
-- JUnit 5 / MockMvc / Mockito
-- JaCoCo para relatorio de cobertura
-
-## Decisoes tecnicas
-
-- Optei por usar `H2` em memoria para manter a configuracao simples e alinhada ao enunciado.
-- A aplicacao foi dividida em `controller`, `service`, `repository` e `dto` para deixar cada responsabilidade clara.
-- A media diaria foi calculada considerando todos os dias do intervalo informado, inclusive dias sem venda. Essa foi uma premissa adotada por nao haver uma definicao mais detalhada no desafio.
-- O total de vendas do vendedor foi interpretado como a soma monetaria do campo `value` no periodo.
-- Foi criado um tratamento global de excecoes para padronizar erros de validacao e regras de negocio.
-
-## Estrutura do projeto
-
-- `controller`: expõe os endpoints REST e recebe os parametros da requisicao.
-- `service`: concentra as regras de negocio e a orquestracao da aplicacao.
-- `repository`: faz a persistencia das vendas e a consulta agregada por vendedor.
-- `dto`: separa o contrato da API dos objetos de persistencia.
-- `exception`: padroniza as respostas de erro para validacoes e cenarios de negocio.
+- Java 21 e Spring Boot 3.4
+- Spring Web, Validation, Data JPA e Actuator
+- PostgreSQL 16 e Flyway
+- OpenAPI 3 / Swagger UI
+- JUnit 5, MockMvc, Mockito e JaCoCo
+- Docker Compose e GitHub Actions
 
 ## Endpoints
 
-### Criar venda
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| `POST` | `/api/v1/sales` | Registra uma venda |
+| `GET` | `/api/v1/vendors/summary?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` | Consolida vendas por vendedor |
+| `GET` | `/actuator/health` | Verifica a saúde da aplicação |
 
-`POST /api/v1/sales`
+## Executar com Docker
 
-#### Exemplo de requisicao
+O Docker Compose inicia a API e um PostgreSQL configurado para desenvolvimento local.
 
-```json
-{
-  "saleDate": "2026-03-10",
-  "value": 1200.50,
-  "sellerId": 10,
-  "sellerName": "Lucas Silva"
-}
+```bash
+docker compose up --build
 ```
 
-#### Exemplo de resposta
+Quando os serviços estiverem prontos:
 
-```json
-{
-  "id": 1,
-  "saleDate": "2026-03-10",
-  "value": 1200.50,
-  "sellerId": 10,
-  "sellerName": "Lucas Silva"
-}
-```
+- Swagger UI: <http://localhost:8080/swagger-ui/index.html>
+- OpenAPI JSON: <http://localhost:8080/v3/api-docs>
+- Health check: <http://localhost:8080/actuator/health>
 
-### Resumo por vendedor
+Para encerrar, execute `docker compose down`. Use `docker compose down -v` somente se desejar apagar os dados locais do PostgreSQL.
 
-`GET /api/v1/vendors/summary?startDate=2026-03-01&endDate=2026-03-31`
+## Executar com Maven
 
-#### Exemplo de resposta
+Requer Java 21 e um PostgreSQL acessível. As configurações podem ser fornecidas por variáveis de ambiente:
 
-```json
-[
-  {
-    "sellerName": "Marina",
-    "totalSales": 300.00,
-    "dailyAverageSales": 9.68
-  },
-  {
-    "sellerName": "Lucas",
-    "totalSales": 150.00,
-    "dailyAverageSales": 4.84
-  }
-]
-```
-
-## Como executar
-
-### Pre-requisitos
-
-- Java 8 ou superior
-
-### Passos
+| Variável | Padrão local |
+| --- | --- |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/salesdb` |
+| `DB_USERNAME` | `sales_user` |
+| `DB_PASSWORD` | `sales_password` |
 
 ```bash
 ./mvnw spring-boot:run
@@ -99,44 +51,36 @@ Implementar dois servicos REST:
 
 No Windows:
 
-```bash
-mvnw.cmd spring-boot:run
+```powershell
+.\mvnw.cmd spring-boot:run
 ```
 
-A aplicacao sobe por padrao em `http://localhost:8080`.
+O Flyway cria automaticamente a tabela `sales` na inicialização. Em testes, o perfil `test` usa H2 em memória e aplica as mesmas migrações.
 
-### Console do H2
-
-- URL: `http://localhost:8080/h2-console`
-- JDBC URL: `jdbc:h2:mem:salesdb`
-- Usuario: `sa`
-- Senha: em branco
-
-## Como rodar os testes
+## Exemplos de uso
 
 ```bash
-./mvnw test
+curl -X POST http://localhost:8080/api/v1/sales \
+  -H "Content-Type: application/json" \
+  -d '{"saleDate":"2026-03-10","value":1200.50,"sellerId":10,"sellerName":"Lucas Silva"}'
 ```
 
-Para gerar tambem o relatorio de cobertura:
+```bash
+curl "http://localhost:8080/api/v1/vendors/summary?startDate=2026-03-01&endDate=2026-03-31"
+```
+
+## Testes e qualidade
 
 ```bash
 ./mvnw verify
 ```
 
-O relatorio do JaCoCo sera gerado em `target/site/jacoco/index.html`.
+O comando executa testes unitários e de integração, valida as migrações Flyway e gera o relatório JaCoCo em `target/site/jacoco/index.html`. O workflow em `.github/workflows/ci.yml` executa essa validação em todo push e pull request.
 
-## Validacoes implementadas
+## Regras de negócio
 
-- data da venda obrigatoria e nao futura;
-- valor obrigatorio e maior que zero;
-- id do vendedor obrigatorio;
-- nome do vendedor obrigatorio;
-- periodo do relatorio com data final maior ou igual a data inicial.
-
-## Melhorias que eu faria em uma evolucao
-
-- documentacao OpenAPI/Swagger;
-- paginacao e filtros adicionais;
-- versionamento e migracoes de banco com Flyway;
-- endpoint para consulta individual de venda.
+- Data obrigatória e não futura.
+- Valor obrigatório, positivo e com no máximo duas casas decimais.
+- Identificador e nome de vendedor obrigatórios.
+- A data final do relatório não pode ser anterior à data inicial.
+- A média diária considera todos os dias do intervalo, inclusive os sem venda.
