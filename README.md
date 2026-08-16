@@ -19,6 +19,11 @@ API REST para registro de vendas e consolidação do desempenho de vendedores em
 | `GET` | `/api/v1/vendors/summary?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` | Consolida vendas por vendedor |
 | `GET` | `/actuator/health` | Verifica a saúde da aplicação |
 
+## Demo online
+
+- Swagger UI: <https://sales-api-p2u8.onrender.com/swagger-ui/index.html>
+- Health check: <https://sales-api-p2u8.onrender.com/actuator/health>
+
 ## Executar com Docker
 
 O Docker Compose inicia a API e um PostgreSQL configurado para desenvolvimento local.
